@@ -1,0 +1,45 @@
+{
+  "name": "@esauti/browser",
+  "version": "0.1.0",
+  "description": "Browser SDK for eSauti: consent-gated tracking loader, SPA page tracking, form embed, focus, and event injection.",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node ./tools/cjs-wrapper.mjs",
+    "test": "node --test",
+    "clean": "rm -rf dist",
+    "format": "prettier --check --ignore-path .gitignore .",
+    "format:fix": "prettier --write --ignore-path .gitignore ."
+  },
+  "keywords": [
+    "esauti",
+    "mautic",
+    "tracking",
+    "consent",
+    "events",
+    "forms",
+    "focus"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.1.1",
+    "prettier-plugin-organize-imports": "^3.2.4"
+  }
+}
