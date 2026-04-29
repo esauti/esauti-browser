@@ -12,6 +12,7 @@ import {
   TrackerLoadOptions,
 } from './types';
 import {debugLog, normalizeBaseUrl} from './utils';
+import {getTrackedContactId, getTrackedContactInfo} from "./tracked-contact";
 
 export * from './http';
 export * from './types';
@@ -37,6 +38,15 @@ export type BrowserClient = {
     enable(opts: FocusOptions): () => void;
     refresh(focusId: string): void;
   };
+
+  tracked: {
+    getContactId(): string | null;
+    getInfo(): {
+      contactId: string | null;
+      deviceId: string | null;
+      source: "cookie" | "localStorage" | "none";
+    };
+  }
 
   destroy(): void;
 };
@@ -118,6 +128,10 @@ export function createBrowserClient(
     focus: {
       enable: (f: FocusOptions) => enableFocus(opts, f),
       refresh: (focusId: string) => refreshFocus(opts, focusId),
+    },
+    tracked: {
+      getContactId: () => getTrackedContactId(),
+      getInfo: () => getTrackedContactInfo(),
     },
     destroy: () => {
       if (unpatch) unpatch();
