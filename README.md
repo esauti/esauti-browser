@@ -41,19 +41,12 @@ await window.esauti_start_tracking?.();
 - Sends initial pageview.
 
 ```ts
-createBrowserClient({ baseUrl, consentMode: 'standard' });
-```
-
-### Consent-gated mode (recommended for Law 25 / GDPR)
-
-- Does NOT load tracker automatically.
-- Exposes `window.esauti_start_tracking()` to start tracking after consent.
-
-```ts
-createBrowserClient({ baseUrl, consentMode: 'gated' });
+createBrowserClient({ baseUrl });
 ```
 
 ## Forms
+
+### Embed a form
 
 Simple iframe embed (reliable across frameworks):
 
@@ -69,6 +62,16 @@ cleanup();
 ```
 
 The embed URL is: `{baseUrl}/form/{id}`.
+
+### Submit a form programmatically
+
+A simple way to trigger form submission events without embedding the form:
+
+```ts
+esauti.forms.submit('123', {
+  email: 'test@esauti.com',
+});
+```
 
 ## Focus
 
@@ -102,6 +105,7 @@ await esauti.identify({
 - `client.startTracking(extraAttrs?)`
 - `client.trackPage(attrs?)`
 - `client.forms.mount(el, {formId,...})`
+- `client.forms.submit(formId, {...})`
 - `client.focus.enable({focusId,...})`
 - `client.identify(identity, extra?)`
 
