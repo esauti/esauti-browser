@@ -1,21 +1,13 @@
-import type {
-  BrowserClientOptions,
-  EventEnvelope,
-  FormMountOptions,
-  FocusOptions,
-  SendEventOptions,
-  TrackerLoadOptions,
-} from "./types";
-import { installConsentGate, loadTrackerScript, trackPageView } from "./tracker";
-import { buildEnvelope, sendEvent } from "./events";
-import { mountForm } from "./forms";
-import { enableFocus, refreshFocus } from "./focus";
-import { patchHistory } from "./spa";
-import { identify } from "./identify";
-import { debugLog, normalizeBaseUrl } from "./utils";
+import {enableFocus, refreshFocus} from './focus';
+import {mountForm, submitForm} from './forms';
+import {identify} from './identify';
+import {patchHistory} from './spa';
+import {installConsentGate, loadTrackerScript, trackPageView,} from './tracker';
+import type {BrowserClientOptions, FocusOptions, FormMountOptions, Identity, TrackerLoadOptions,} from './types';
+import {debugLog, normalizeBaseUrl} from './utils';
 
-export * from "./types";
-export * from "./http";
+export * from './http';
+export * from './types';
 
 export type BrowserClient = {
   init(): Promise<void>;
@@ -24,15 +16,14 @@ export type BrowserClient = {
   isTrackingLoaded(): boolean;
   trackPage(attrs?: Record<string, unknown>): void;
 
-  events: {
-    build(type: string, payload?: Partial<EventEnvelope>): EventEnvelope;
-    send(type: string, payload?: Partial<EventEnvelope> | EventEnvelope, options?: SendEventOptions): Promise<any>;
-  };
-
-  identify(identity: any, extra?: Record<string, unknown>): Promise<{ linked: boolean; contact_id?: string }>;
+  identify(
+    identity: any,
+    extra?: Record<string, unknown>
+  ): void;
 
   forms: {
     mount(el: HTMLElement, opts: FormMountOptions): () => void;
+    submit: (id: string, payload: Record<string, string | Blob>, extra: Record<string, unknown>) => void;
   };
 
   focus: {
@@ -43,12 +34,13 @@ export type BrowserClient = {
   destroy(): void;
 };
 
-export function createBrowserClient(options: BrowserClientOptions): BrowserClient {
+export function createBrowserClient(
+  options: BrowserClientOptions
+): BrowserClient {
   const opts: BrowserClientOptions = {
     ...options,
     baseUrl: normalizeBaseUrl(options.baseUrl),
-    source: options.source || "web",
-    consentMode: options.consentMode || "standard",
+    source: options.source || 'web',
   };
 
   let unpatch: null | (() => void) = null;
@@ -57,14 +49,22 @@ export function createBrowserClient(options: BrowserClientOptions): BrowserClien
   installConsentGate(opts);
 
   function isTrackingLoaded(): boolean {
-    return typeof window !== "undefined" && typeof (window as any).mt === "function";
+    return (
+      typeof window !== 'undefined' && typeof (window as any).mt === 'function'
+    );
   }
 
   async function loadTracker(loadOpts: TrackerLoadOptions = {}): Promise<void> {
-    await loadTrackerScript(opts.baseUrl, { inject: "head", ...loadOpts }, opts.debug);
+    await loadTrackerScript(
+      opts.baseUrl,
+      { inject: 'head', ...loadOpts },
+      opts.debug
+    );
   }
 
-  async function startTracking(extraAttrs: Record<string, unknown> = {}): Promise<void> {
+  async function startTracking(
+    extraAttrs: Record<string, unknown> = {}
+  ): Promise<void> {
     // Always load tracker first
     await loadTracker();
     // Then send initial pageview
@@ -77,19 +77,16 @@ export function createBrowserClient(options: BrowserClientOptions): BrowserClien
 
   async function init(): Promise<void> {
     // Wire the instance-aware implementation into window.esauti_start_tracking
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       window.esauti_start_tracking = startTracking;
       window.esauti_is_tracking_loaded = () => isTrackingLoaded();
     }
 
-    // Standard mode loads tracker immediately
-    if (opts.consentMode === "standard") {
-      try {
-        await loadTracker();
-        trackPage();
-      } catch (e) {
-        debugLog(opts.debug, "Tracker init failed (standard mode)", e);
-      }
+    try {
+      await loadTracker();
+      trackPage();
+    } catch (e) {
+      debugLog(opts.debug, 'Tracker init failed (standard mode)', e);
     }
 
     // Optional SPA auto-tracking
@@ -105,16 +102,11 @@ export function createBrowserClient(options: BrowserClientOptions): BrowserClien
     startTracking,
     isTrackingLoaded,
     trackPage,
-    events: {
-      build: (type: string, payload: Partial<EventEnvelope> = {}) => buildEnvelope(opts, type, payload),
-      send: async (type: string, payload: Partial<EventEnvelope> | EventEnvelope = {}, options: SendEventOptions = {}) => {
-        const env = (payload as any).type ? (payload as EventEnvelope) : buildEnvelope(opts, type, payload as Partial<EventEnvelope>);
-        return sendEvent(opts, env, options);
-      },
-    },
-    identify: (identityObj: any, extra: Record<string, unknown> = {}) => identify(opts, identityObj, extra),
+    identify: (identityObj: Identity, extra: Record<string, unknown> = {}) =>
+      identify(opts, identityObj, extra),
     forms: {
       mount: (el: HTMLElement, m: FormMountOptions) => mountForm(el, opts, m),
+      submit: (id: string, payload: Record<string, string | Blob>, extra: Record<string, unknown> = {}) => submitForm(opts, id, payload, extra),
     },
     focus: {
       enable: (f: FocusOptions) => enableFocus(opts, f),
@@ -129,7 +121,10 @@ export function createBrowserClient(options: BrowserClientOptions): BrowserClien
   return api;
 }
 
-function debounce<T extends (...args: any[]) => void>(fn: T, waitMs: number): T {
+function debounce<T extends (...args: any[]) => void>(
+  fn: T,
+  waitMs: number
+): T {
   let t: any = null;
   return ((...args: any[]) => {
     if (t) clearTimeout(t);

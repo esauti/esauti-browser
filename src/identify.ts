@@ -1,34 +1,28 @@
-import type { BrowserClientOptions, Identity } from "./types";
-import { defaultHeaders, httpRequest } from "./http";
-import { normalizeBaseUrl, uuidv4 } from "./utils";
+import type {BrowserClientOptions, Identity} from './types';
+import {debugLog} from './utils';
 
-export async function identify(
+export function identify(
   opts: BrowserClientOptions,
   identity: Identity,
   extra: Record<string, unknown> = {},
-  requestId?: string
-): Promise<{ linked: boolean; contact_id?: string }> {
-  const baseUrl = normalizeBaseUrl(opts.baseUrl);
-  const path = opts.identifyEndpointPath || "/api/integrations/identify";
-  const url = `${baseUrl}${path}`;
+  debug?: boolean
+): void {
+  if (typeof window === 'undefined') return;
+  if (typeof window.mt !== 'function') {
+    debugLog(debug, 'mt() not available; skip identify');
+    return;
+  }
 
-  const headers: Record<string, string> = {
-    ...defaultHeaders(requestId || uuidv4()),
-    "X-eSauti-Source": opts.source || "web",
-  };
-  if (opts.token) headers["Authorization"] = `Bearer ${opts.token}`;
+  if (!identity.email && !identity.phone && !identity.external_id) {
+    debugLog(debug, 'identify called without identifiable attributes (email, phone or external_id); skipping.');
+    return;
+  }
 
-  const res = await httpRequest<any>({
-    method: "POST",
-    url,
-    headers,
-    json: { identity, ...extra },
-    timeoutMs: 10_000,
-    debug: opts.debug,
-  });
+  const attrs = {...identity, ...extra};
 
-  return {
-    linked: Boolean(res.data?.linked ?? true),
-    contact_id: res.data?.contact_id,
-  };
+  try {
+    window.mt('send', 'identify', attrs);
+  } catch (e) {
+    debugLog(debug, 'trackPageView error', e);
+  }
 }

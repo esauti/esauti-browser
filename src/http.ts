@@ -1,4 +1,4 @@
-import { debugLog, uuidv4 } from "./utils";
+import { debugLog, uuidv4 } from './utils';
 
 export type HttpResponse<T = unknown> = {
   status: number;
@@ -19,14 +19,17 @@ export type HttpRequestOptions = {
 };
 
 export class TransportError extends Error {
-  name = "TransportError";
-  constructor(message: string, public cause?: unknown) {
+  name = 'TransportError';
+  constructor(
+    message: string,
+    public cause?: unknown
+  ) {
     super(message);
   }
 }
 
 export class ApiError extends Error {
-  name = "ApiError";
+  name = 'ApiError';
   constructor(
     message: string,
     public status: number,
@@ -37,10 +40,16 @@ export class ApiError extends Error {
   }
 }
 
-export async function httpRequest<T = unknown>(opts: HttpRequestOptions): Promise<HttpResponse<T>> {
+export async function httpRequest<T = unknown>(
+  opts: HttpRequestOptions
+): Promise<HttpResponse<T>> {
   const controller = opts.timeoutMs ? new AbortController() : null;
   const timeout = opts.timeoutMs
-    ? setTimeout(() => controller?.abort(new DOMException("Request timeout", "AbortError")), opts.timeoutMs)
+    ? setTimeout(
+        () =>
+          controller?.abort(new DOMException('Request timeout', 'AbortError')),
+        opts.timeoutMs
+      )
     : null;
 
   const mergedSignal = mergeSignals(opts.signal, controller?.signal);
@@ -49,11 +58,11 @@ export async function httpRequest<T = unknown>(opts: HttpRequestOptions): Promis
   let body: string | undefined;
 
   if (opts.json !== undefined) {
-    headers["Content-Type"] = headers["Content-Type"] || "application/json";
+    headers['Content-Type'] = headers['Content-Type'] || 'application/json';
     body = JSON.stringify(opts.json);
   }
 
-  debugLog(opts.debug, "HTTP", opts.method, opts.url);
+  debugLog(opts.debug, 'HTTP', opts.method, opts.url);
 
   try {
     const res = await fetch(opts.url, {
@@ -61,7 +70,7 @@ export async function httpRequest<T = unknown>(opts: HttpRequestOptions): Promis
       headers,
       body,
       signal: mergedSignal ?? undefined,
-      credentials: "include",
+      credentials: 'include',
     });
 
     const headerObj: Record<string, string> = {};
@@ -89,14 +98,17 @@ export async function httpRequest<T = unknown>(opts: HttpRequestOptions): Promis
 
     return out;
   } catch (e: any) {
-    if (e?.name === "ApiError") throw e;
-    throw new TransportError(e?.message || "Network error", e);
+    if (e?.name === 'ApiError') throw e;
+    throw new TransportError(e?.message || 'Network error', e);
   } finally {
     if (timeout) clearTimeout(timeout);
   }
 }
 
-function mergeSignals(a?: AbortSignal | null, b?: AbortSignal | null): AbortSignal | null {
+function mergeSignals(
+  a?: AbortSignal | null,
+  b?: AbortSignal | null
+): AbortSignal | null {
   if (!a && !b) return null;
   if (a && !b) return a;
   if (!a && b) return b;
@@ -104,13 +116,13 @@ function mergeSignals(a?: AbortSignal | null, b?: AbortSignal | null): AbortSign
   // Merge by creating a new controller that aborts if any aborts
   const controller = new AbortController();
   const onAbort = () => controller.abort();
-  a!.addEventListener("abort", onAbort, { once: true });
-  b!.addEventListener("abort", onAbort, { once: true });
+  a!.addEventListener('abort', onAbort, { once: true });
+  b!.addEventListener('abort', onAbort, { once: true });
   return controller.signal;
 }
 
 export function defaultHeaders(requestId?: string): Record<string, string> {
   return {
-    "X-Request-Id": requestId || uuidv4(),
+    'X-Request-Id': requestId || uuidv4(),
   };
 }
