@@ -1,4 +1,4 @@
-import type { BrowserClientOptions, FormMountOptions } from './types';
+import {BrowserClientOptions, FormMountOptions, FormSubmitResult} from './types';
 import { normalizeBaseUrl, toQuery } from './utils';
 
 export function mountForm(
@@ -37,7 +37,7 @@ export async function submitForm(
   id: string,
   payload: Record<string, string | Blob>,
   extra: Record<string, unknown> = {},
-): Promise<void> {
+): Promise<FormSubmitResult|undefined> {
   const formValues = new FormData();
 
   for (const key of Object.keys(payload)) {
@@ -60,7 +60,9 @@ export async function submitForm(
 
     if (!response.ok) {
       console.error("Could not post the survey results");
+      return;
     }
+    return (await response.json()) as FormSubmitResult;
   } catch (error) {
     console.log(error);
   }

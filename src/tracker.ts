@@ -43,33 +43,59 @@ export async function loadTrackerScript(
 ): Promise<void> {
   const b = normalizeBaseUrl(baseUrl);
   const trackingScriptUrl = loadOpts.trackingScriptUrl || `${b}/mtc.js`;
-  if (typeof document === 'undefined') return;
+  if (typeof document === "undefined" || typeof window === "undefined") return;
 
-  if (scriptExists(trackingScriptUrl) || isTrackerLoaded()) {
-    debugLog(debug, 'Tracker already present');
+  // 1) Ensure the global tracking object name is set
+  const trackingObjectName = "mt";
+  (window as any).MauticTrackingObject = trackingObjectName;
+
+  // 2) Ensure mt() exists as a queue function BEFORE loading mtc.js
+  const w = window as any;
+  if (typeof w[trackingObjectName] !== "function") {
+    w[trackingObjectName] = function (...args: any[]) {
+      (w[trackingObjectName].q = w[trackingObjectName].q || []).push(args);
+    };
+  } else {
+    // Ensure it has a queue array if already present
+    w[trackingObjectName].q = w[trackingObjectName].q || [];
+  }
+
+  // If mtc.js already loaded, we’re done
+  if (typeof w.mt === "function" && w.mt !== w[trackingObjectName]) {
+    // In rare cases mt is replaced; still fine
+  }
+
+  // Avoid inserting duplicates
+  const exists = !!document.querySelector(
+    `script[data-esauti-tracker="1"][src="${CSS.escape(trackingScriptUrl)}"]`
+  );
+  if (exists) {
+    debugLog(debug, "Tracker script already injected:", trackingScriptUrl);
     loadOpts.onLoaded?.();
     return;
   }
 
   await new Promise<void>((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = trackingScriptUrl;
-    s.async = true;
-    s.defer = true;
-    s.dataset.esautiTracker = '1';
+    const a = document.createElement("script");
+    a.async = true;
+    a.src = trackingScriptUrl;
+    a.dataset.esautiTracker = "1";
 
-    s.onload = () => {
-      debugLog(debug, 'Tracker loaded:', trackingScriptUrl);
+    a.onload = () => {
+      debugLog(debug, "Tracker loaded:", trackingScriptUrl);
       loadOpts.onLoaded?.();
       resolve();
     };
-    s.onerror = () =>
-      reject(new Error(`Failed to load tracker: ${trackingScriptUrl}`));
+    a.onerror = () => reject(new Error(`Failed to load tracker: ${trackingScriptUrl}`));
 
-    const target = loadOpts.inject === 'body' ? document.body : document.head;
-    if (!target)
-      return reject(new Error('No DOM target to inject tracker script'));
-    target.appendChild(s);
+    // Match Mautic behavior: insert before first script tag if possible
+    const m = document.getElementsByTagName("script")[0];
+    if (m?.parentNode) {
+      m.parentNode.insertBefore(a, m);
+    } else {
+      // fallback
+      (loadOpts.inject === "body" ? document.body : document.head).appendChild(a);
+    }
   });
 }
 

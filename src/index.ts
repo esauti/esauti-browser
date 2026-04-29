@@ -3,7 +3,14 @@ import {mountForm, submitForm} from './forms';
 import {identify} from './identify';
 import {patchHistory} from './spa';
 import {installConsentGate, loadTrackerScript, trackPageView,} from './tracker';
-import type {BrowserClientOptions, FocusOptions, FormMountOptions, Identity, TrackerLoadOptions,} from './types';
+import {
+  BrowserClientOptions,
+  FocusOptions,
+  FormMountOptions,
+  FormSubmitResult,
+  Identity,
+  TrackerLoadOptions,
+} from './types';
 import {debugLog, normalizeBaseUrl} from './utils';
 
 export * from './http';
@@ -23,7 +30,7 @@ export type BrowserClient = {
 
   forms: {
     mount(el: HTMLElement, opts: FormMountOptions): () => void;
-    submit: (id: string, payload: Record<string, string | Blob>, extra: Record<string, unknown>) => void;
+    submit: (id: string, payload: Record<string, string | Blob>, extra: Record<string, unknown>) => Promise<FormSubmitResult|undefined>;
   };
 
   focus: {

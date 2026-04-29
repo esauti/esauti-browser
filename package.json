@@ -1,7 +1,7 @@
 {
   "name": "@esauti/browser",
   "version": "0.1.0",
-  "description": "Browser SDK for eSauti: consent-gated tracking loader, SPA page tracking, form embed, focus, and event injection.",
+  "description": "Browser SDK for eSauti: consent-gated tracking loader, SPA page tracking, form embed, focus.",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",

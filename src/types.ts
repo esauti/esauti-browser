@@ -53,6 +53,12 @@ export type FormMountOptions = {
   query?: Record<string, string>;
 };
 
+export type FormSubmitResult = {
+  results: Record<string, string | Blob>;
+  success: boolean;
+  successMessage?: string;
+}
+
 export type FocusOptions = {
   focusId: string;
   /**
